@@ -5,8 +5,8 @@ declare(strict_types=1);
  * export_date_blocks.php
  * - config/sheets.json に登録された複数シートを対象
  * - シート全体から「m月d日」形式のセルを探す
- * - 見つけた日付セルの“下20セル”を取得
- * - 20セルを指定の項目名で連想配列化して JSON 保存
+ * - 見つけた日付セルの“下23セル(20セル + 3行スキップ + 3セル)”を取得
+ * - 23セルを指定の項目名で連想配列化して JSON 保存
  *
  * 依存: vendor不要（Service Account JSON + JWT + curl）
  */
@@ -25,7 +25,7 @@ if (php_sapi_name() !== 'cli') {
   header('Content-Type: text/plain; charset=UTF-8');
 }
 
-/** 下20セルの項目名（順番固定） */
+/** 取得セルの項目名（順番固定） */
 const METRIC_KEYS = [
   '動画タイトル',
   'ビデオID',
@@ -47,6 +47,9 @@ const METRIC_KEYS = [
   'CTR伸び率',
   '視聴回数伸び率',
   '維持率伸び率',
+  '編集担当',
+  '今回の改善箇所',
+  '改善の成否/次回の改善',
 ];
 
 function loadJson(string $path): array {
@@ -197,7 +200,7 @@ function colToA1(int $col0): string {
 }
 
 /**
- * シート全体から「m月d日セル」を見つけ、下20セルを項目付きで返す
+ * シート全体から「m月d日セル」を見つけ、下23セルを項目付きで返す
  */
 function buildDateBlocksForSheet(string $accessToken, string $spreadsheetId, string $sheetName): array {
   $range = $sheetName . '!A:ZZ';
@@ -227,13 +230,17 @@ function buildDateBlocksForSheet(string $accessToken, string $spreadsheetId, str
     }
   }
 
-  // 下20セルを取得し、項目名付きに変換
+  // 下23セル（20セル + 3行スキップ + 3セル）を取得し、項目名付きに変換
   $blocks = [];
   foreach ($found as $f) {
-    // 下20セル raw
+    // 取得対象の相対行オフセット:
+    // 1..20, 24..26（21..23はスキップ）
+    $offsets = array_merge(range(1, 20), range(24, 26));
+
+    // 下23セル raw
     $rawVals = [];
-    for ($k = 1; $k <= 20; $k++) {
-      $r = $f['row0'] + $k;
+    foreach ($offsets as $offset) {
+      $r = $f['row0'] + $offset;
       $c = $f['col0'];
 
       $v = null;
