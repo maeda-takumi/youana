@@ -330,12 +330,15 @@ try {
       $lines[] = $head;
 
       foreach ($e['items'] as $it) {
-        $lines[] = sprintf(
-          '  - %s: 実測=%s / 月平均=%s',
-          $it['metric'],
-          formatMetricValue((string)$it['metric'], (float)$it['latest']),
-          formatMetricValue((string)$it['metric'], (float)$it['avg'])
-        );
+        $lines[] = '  - ' . (string)$it['metric'];//項目のみ
+
+        //以下値も出したいなら復活させてね
+        // $lines[] = sprintf(
+        //   '  - %s: 実測=%s / 月平均=%s',
+        //   $it['metric'],
+        //   formatMetricValue((string)$it['metric'], (float)$it['latest']),
+        //   formatMetricValue((string)$it['metric'], (float)$it['avg'])
+        // );
       }
     }
     $lines[] = '';
