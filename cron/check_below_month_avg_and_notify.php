@@ -313,20 +313,20 @@ try {
 
   $lines = [];
   $lines[] = '[info][title]直近値が同月平均を下回った項目通知[/title]';
-  $lines[] = '対象: 各シートの直近日付（最大 m月d日）';
-  $lines[] = '条件: 直近値 < 同月平均（空/非数値は平均計算から除外）';
+//   $lines[] = '対象: 各シートの直近日付（最大 m月d日）';
+//   $lines[] = '条件: 直近値 < 同月平均（空/非数値は平均計算から除外）';
   $lines[] = '';
 
   foreach ($alertsBySheet as $sheetName => $entries) {
     $lines[] = '■ ' . $sheetName;
     foreach ($entries as $e) {
       $head = '・' . $e['date'];
-      if (($e['a1'] ?? '') !== '') {
-        $head .= ' (A1: ' . $e['a1'] . ')';
-      }
-      if (($e['block_index'] ?? 0) > 1) {
-        $head .= ' [block ' . (int)$e['block_index'] . ']';
-      }
+    //   if (($e['a1'] ?? '') !== '') {
+    //     $head .= ' (A1: ' . $e['a1'] . ')';
+    //   }
+    //   if (($e['block_index'] ?? 0) > 1) {
+    //     $head .= ' [block ' . (int)$e['block_index'] . ']';
+    //   }
       $lines[] = $head;
 
       foreach ($e['items'] as $it) {
@@ -341,7 +341,7 @@ try {
     $lines[] = '';
   }
 
-  $lines[] = '※通知済みキーは sheetName + date で永続管理';
+//   $lines[] = '※通知済みキーは sheetName + date で永続管理';
   $lines[] = '[/info]';
 
   sendChatwork($cw['TOKEN'], $cw['ROOM_ID'], implode("\n", $lines));
