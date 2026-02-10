@@ -6,8 +6,8 @@ declare(strict_types=1);
  *
  * 目的:
  * - 下回り通知済み（data/notified_below_month_avg.json）のデータについて、
- *   その日付の翌日が today を過ぎたタイミングでフォローアップチェックを行う。
- * - metrics の下記3項目のうち1つでも未入力(null/空文字)なら通知する。
+ *   date_blocks.json 上で「通知日付の次の日付」が today を過ぎたタイミングで
+ *   フォローアップチェックを行う。
  *   - 編集担当
  *   - 今回の改善箇所
  *   - 改善の成否/次回の改善
@@ -149,6 +149,31 @@ function parseSheetDateKey(string $key): ?array {
   return [$sheet, $date];
 }
 
+function findNextDateLabelInBlocks(array $blocks, string $currentDateLabel): ?string {
+  $count = count($blocks);
+  for ($i = 0; $i < $count; $i++) {
+    $block = $blocks[$i] ?? null;
+    if (!is_array($block)) continue;
+
+    $label = trim((string)($block['date'] ?? ''));
+    if ($label !== $currentDateLabel) continue;
+
+    for ($j = $i + 1; $j < $count; $j++) {
+      $nextBlock = $blocks[$j] ?? null;
+      if (!is_array($nextBlock)) continue;
+
+      $nextLabel = trim((string)($nextBlock['date'] ?? ''));
+      if ($nextLabel !== '') {
+        return $nextLabel;
+      }
+    }
+
+    return null;
+  }
+
+  return null;
+}
+
 try {
   $data = loadJson($jsonPath);
   $notifiedBelow = loadOptionalJson($notifiedBelowPath);
@@ -175,16 +200,18 @@ try {
 
     [$sheetName, $dateLabel] = $parsed;
 
-    $notifiedDate = dateLabelToDate($dateLabel, $year);
-    if (!$notifiedDate) continue;
+    $blocks = $sheets[$sheetName] ?? null;
+    if (!is_array($blocks)) continue;
 
-    $nextDate = $notifiedDate->modify('+1 day');
+    $nextDateLabel = findNextDateLabelInBlocks($blocks, $dateLabel);
+    if ($nextDateLabel === null) continue;
+
+    $nextDate = dateLabelToDate($nextDateLabel, $year);
+    if (!$nextDate) continue;
+
     if ($nextDate >= $today) {
       continue;
     }
-
-    $blocks = $sheets[$sheetName] ?? null;
-    if (!is_array($blocks)) continue;
 
     $hasMissing = false;
     foreach ($blocks as $block) {
@@ -220,7 +247,7 @@ try {
   }
 
   if (count($alerts) === 0) {
-    echo 'OK: 通知対象なし（下回り通知済みの翌日経過データに未入力なし）' . PHP_EOL;
+    echo 'OK: 通知対象なし（下回り通知済みの次データ日付経過データに未入力なし）' . PHP_EOL;
     exit(0);
   }
 
