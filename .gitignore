@@ -1,0 +1,6 @@
+# secrets
+oauth/service_account.json
+oauth/*.json
+config/spreadsheet.json
+config/sheets.json
+config/chatwork.php
