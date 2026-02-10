@@ -25,6 +25,9 @@ const IGNORE_KEYS = [
   '動画タイトル',
   'ビデオID',
   '総動画時間',
+  '編集担当',
+  '今回の改善箇所',
+  '改善の成否/次回の改善',
 ];
 
 function write_err(string $msg): void {
