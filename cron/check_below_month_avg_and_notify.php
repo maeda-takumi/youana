@@ -172,7 +172,14 @@ function formatSecondsToHms(float $seconds): string {
 }
 
 function formatMetricValue(string $metricName, float $value): string {
-  if (mb_strpos($metricName, '時間') !== false) {
+  
+  $hmsMetrics = [
+    '総動画時間',
+    '24時間平均視聴時間',
+    '48時間平均視聴時間',
+  ];
+
+  if (in_array($metricName, $hmsMetrics, true)) {
     return formatSecondsToHms($value);
   }
   $suffix = mb_strpos($metricName, '率') !== false ? '%' : '';
