@@ -131,6 +131,24 @@ function parseMetricNumber(mixed $v): ?float {
   $s = mb_convert_kana($s, 'as', 'UTF-8');
   $s = str_replace(',', '', $s);
 
+
+  // 0:42 / 01:23:45 のような時間表記は秒に正規化
+  if (preg_match('/^(\d+):(\d{1,2})(?::(\d{1,2}))?$/', $s, $m)) {
+    if (isset($m[3]) && $m[3] !== '') {
+      return ((float)$m[1] * 3600.0) + ((float)$m[2] * 60.0) + (float)$m[3];
+    }
+    return ((float)$m[1] * 60.0) + (float)$m[2];
+  }
+
+  // 1時間23分45秒 / 12分34秒 のような時間表記は秒に正規化
+  if (preg_match('/^\s*(?:(\d+(?:\.\d+)?)\s*時間)?\s*(?:(\d+(?:\.\d+)?)\s*分)?\s*(?:(\d+(?:\.\d+)?)\s*秒)?\s*$/u', $s, $m)) {
+    $h = (isset($m[1]) && $m[1] !== '') ? (float)$m[1] : 0.0;
+    $min = (isset($m[2]) && $m[2] !== '') ? (float)$m[2] : 0.0;
+    $sec = (isset($m[3]) && $m[3] !== '') ? (float)$m[3] : 0.0;
+    if ($h > 0.0 || $min > 0.0 || $sec > 0.0) {
+      return ($h * 3600.0) + ($min * 60.0) + $sec;
+    }
+  }
   if (!preg_match('/-?\d+(?:\.\d+)?/', $s, $m)) {
     return null;
   }
@@ -142,7 +160,21 @@ function formatNum(float $n): string {
   return number_format($n, 2, '.', '');
 }
 
+function formatSecondsToHms(float $seconds): string {
+  $total = (int)round($seconds);
+  if ($total < 0) $total = 0;
+
+  $h = intdiv($total, 3600);
+  $m = intdiv($total % 3600, 60);
+  $s = $total % 60;
+
+  return sprintf('%02d:%02d:%02d', $h, $m, $s);
+}
+
 function formatMetricValue(string $metricName, float $value): string {
+  if (mb_strpos($metricName, '時間') !== false) {
+    return formatSecondsToHms($value);
+  }
   $suffix = mb_strpos($metricName, '率') !== false ? '%' : '';
   return formatNum($value) . $suffix;
 }
