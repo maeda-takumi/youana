@@ -24,6 +24,7 @@ if (php_sapi_name() !== 'cli') {
 const IGNORE_KEYS = [
   '動画タイトル',
   'ビデオID',
+  '総動画時間',
 ];
 
 function write_err(string $msg): void {
@@ -330,7 +331,13 @@ try {
       $lines[] = $head;
 
       foreach ($e['items'] as $it) {
-        $lines[] = '  - ' . (string)$it['metric'];//項目のみ
+        $lines[] = sprintf(
+          '  - %s：該当値=%s',
+          $it['metric'],
+          formatMetricValue((string)$it['metric'], (float)$it['latest'])
+        );
+
+        // $lines[] = '  - ' . (string)$it['metric'];//項目のみ
 
         //以下値も出したいなら復活させてね
         // $lines[] = sprintf(
