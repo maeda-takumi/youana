@@ -139,7 +139,12 @@ function parseMetricNumber(mixed $v): ?float {
 }
 
 function formatNum(float $n): string {
-  return rtrim(rtrim(number_format($n, 4, '.', ''), '0'), '.');
+  return number_format($n, 2, '.', '');
+}
+
+function formatMetricValue(string $metricName, float $value): string {
+  $suffix = mb_strpos($metricName, '率') !== false ? '%' : '';
+  return formatNum($value) . $suffix;
 }
 
 try {
@@ -236,16 +241,11 @@ try {
         $avg = $sum / $cnt;
 
         if ($latestVal < $avg) {
-          $diffPct = null;
-          if ($avg != 0.0) {
-            $diffPct = (($latestVal - $avg) / $avg) * 100.0;
-          }
 
           $entry['items'][] = [
             'metric' => $metricName,
             'latest' => $latestVal,
             'avg'    => $avg,
-            'diff_pct' => $diffPct,
           ];
         }
       }
@@ -291,16 +291,11 @@ try {
       $lines[] = $head;
 
       foreach ($e['items'] as $it) {
-        $diffText = ($it['diff_pct'] === null)
-          ? 'N/A'
-          : formatNum((float)$it['diff_pct']) . '%';
-
         $lines[] = sprintf(
-          '  - %s: 実測=%s / 月平均=%s / 差分=%s',
+          '  - %s: 実測=%s / 月平均=%s',
           $it['metric'],
-          formatNum((float)$it['latest']),
-          formatNum((float)$it['avg']),
-          $diffText
+          formatMetricValue((string)$it['metric'], (float)$it['latest']),
+          formatMetricValue((string)$it['metric'], (float)$it['avg'])
         );
       }
     }
