@@ -29,7 +29,25 @@ const IGNORE_KEYS = [
   '今回の改善箇所',
   '改善の成否/次回の改善',
 ];
-
+const REQUIRED_RECENT_METRICS = [
+  '24時間平均視聴時間',
+  '48時間平均視聴時間',
+  '24時間総再生時間',
+  '48時間総再生時間',
+  '24時間のインプレッション数',
+  '48時間のインプレッション数',
+  '24時間のクリック率',
+  '48時間のクリック率',
+  '24時間の再生回数',
+  '48時間の再生回数',
+  '24時間の視聴維持率',
+  '48時間の視聴維持率',
+  '48時間の動画内チャンネル登録者数',
+  'インプ伸び率',
+  'CTR伸び率',
+  '視聴回数伸び率',
+  '維持率伸び率',
+];
 function write_err(string $msg): void {
   if (defined('STDERR')) fwrite(STDERR, $msg . PHP_EOL);
   else { error_log($msg); echo $msg . PHP_EOL; }
@@ -124,6 +142,19 @@ function dateLabelToDate(string $label, int $year): ?DateTimeImmutable {
   return new DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $mo, $d));
 }
 
+function isNonEmptyMetric(mixed $v): bool {
+  if ($v === null) return false;
+  if (is_string($v)) return trim($v) !== '';
+  return true;
+}
+
+function hasRequiredRecentMetrics(array $metrics): bool {
+  foreach (REQUIRED_RECENT_METRICS as $metricName) {
+    if (!array_key_exists($metricName, $metrics)) return false;
+    if (!isNonEmptyMetric($metrics[$metricName])) return false;
+  }
+  return true;
+}
 function parseMetricNumber(mixed $v): ?float {
   if ($v === null) return null;
   if (is_int($v) || is_float($v)) return (float)$v;
@@ -206,13 +237,15 @@ try {
   foreach ($sheets as $sheetName => $blocks) {
     if (!is_array($blocks) || count($blocks) === 0) continue;
 
-    // 直近日付（最大）を見つける
+    // 必須項目が揃っているデータのみを直近候補にする
     $latestDate = null;
     $latestLabel = null;
     foreach ($blocks as $b) {
       if (!is_array($b)) continue;
       $label = (string)($b['date'] ?? '');
       if ($label === '') continue;
+      $metrics = $b['metrics'] ?? null;
+      if (!is_array($metrics) || !hasRequiredRecentMetrics($metrics)) continue;
       $dt = dateLabelToDate($label, $year);
       if (!$dt) continue;
       if ($latestDate === null || $dt > $latestDate) {
@@ -243,7 +276,8 @@ try {
       if ((int)$dt->format('n') === $month) {
         $monthBlocks[] = $b;
       }
-      if ($label === $latestLabel) {
+      $metrics = $b['metrics'] ?? null;
+      if ($label === $latestLabel && is_array($metrics) && hasRequiredRecentMetrics($metrics)) {
         $latestBlocks[] = $b; // 同日の複数ブロックは別扱い
       }
     }
